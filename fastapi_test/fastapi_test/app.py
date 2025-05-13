@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 
 from routes.notes import router as notes_router
-from routes.users import router as users_router
+from routes.auth import router as auth_router
 
 
 def create_app() -> FastAPI:
@@ -10,7 +10,7 @@ def create_app() -> FastAPI:
         description="A test with the FastAPI library"
     )
     entrypoint.include_router(notes_router)
-    entrypoint.include_router(users_router)
+    entrypoint.include_router(auth_router)
 
     return entrypoint
 
