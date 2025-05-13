@@ -1,10 +1,10 @@
 import os
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, EmailStr
 from pymongo import MongoClient
 
-from fastapi_test.fastapi_test.security.auth_utils import create_access_token, create_refresh_token
+from fastapi_test.fastapi_test.security.auth_utils import create_access_token, create_refresh_token, decode_token
 from fastapi_test.fastapi_test.security.hash_encoder import encode, matches
 
 router = APIRouter()
@@ -83,4 +83,25 @@ async def login(request: LoginRequest):
             "refresh_token": refresh_token,
             "token_type": "bearer"
         }
+    }
+
+
+@router.post("/auth/refresh")
+async def refresh_token(request: Request):
+    data = await request.json()
+    token = data.get("refresh_token")
+
+    if not token:
+        raise HTTPException(status_code=400, detail="Refresh token missing")
+
+    payload = decode_token(token)
+    if not payload or payload.get("type") != "refresh":
+        raise HTTPException(status_code=401, detail="Invalid or expired refresh token")
+
+    user_id = payload.get("sub")
+    new_access_token = create_access_token({"sub": user_id})
+
+    return {
+        "access_token": new_access_token,
+        "token_type": "bearer"
     }
