@@ -4,8 +4,11 @@ from typing import Optional
 
 from bson import ObjectId
 from fastapi import APIRouter, HTTPException
+from fastapi.params import Depends
 from pydantic import BaseModel
 from pymongo import MongoClient
+
+from fastapi_test.fastapi_test.security.authorizer import get_current_user_id
 
 router = APIRouter()
 
@@ -19,7 +22,6 @@ class NoteRequest(BaseModel):
     content: str
     color: int
     id: Optional[str] = None
-    ownerId: str
 
 
 class NoteResponse(BaseModel):
@@ -31,12 +33,12 @@ class NoteResponse(BaseModel):
 
 
 @router.post("/notes", response_model=NoteResponse)
-async def insert_note(request: NoteRequest):
+async def insert_note(request: NoteRequest, owner_id: str = Depends(get_current_user_id)):
     record = {
         "title": request.title,
         "content": request.content,
         "color": request.color,
-        "ownerId": request.ownerId,
+        "ownerId": owner_id,
         "createdAt": datetime.now(timezone.utc)
     }
     result = notes.insert_one(record)
@@ -52,7 +54,7 @@ async def insert_note(request: NoteRequest):
 
 
 @router.get("/notes", response_model=list[NoteResponse])
-async def get_notes_by_owner_id(owner_id: str):
+async def get_notes_by_owner_id(owner_id: str = Depends(get_current_user_id)):
     result = notes.find({'ownerId': owner_id})
     return [
         NoteResponse(
@@ -67,13 +69,19 @@ async def get_notes_by_owner_id(owner_id: str):
 
 
 @router.delete("/notes/{note_id}", response_model=dict[str, str])
-async def delete_note_by_id(note_id: str):
+async def delete_note_by_id(note_id: str, owner_id: str = Depends(get_current_user_id)):
     try:
-        result = notes.delete_one({'_id': ObjectId(note_id)})
+        object_id = ObjectId(note_id)
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid note ID format!")
 
+    note = notes.find_one({'_id': object_id, 'ownerId': owner_id})
+    if not note:
+        raise HTTPException(status_code=404, detail="Note not found or access denied!")
+
+    result = notes.delete_one({'_id': object_id})
+
     if result.deleted_count == 0:
-        raise HTTPException(status_code=404, detail="Note not found!")
+        raise HTTPException(status_code=500, detail="Deletion failed unexpectedly.")
 
     return {"message": "Note deleted successfully!"}
