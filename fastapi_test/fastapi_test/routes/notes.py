@@ -11,7 +11,7 @@ router = APIRouter()
 
 client = MongoClient(os.getenv("MONGODB_CONNECTION_STRING"))
 db = client['notes']
-collection = db['notes']
+notes = db['notes']
 
 
 class NoteRequest(BaseModel):
@@ -39,8 +39,8 @@ async def insert_note(request: NoteRequest):
         "ownerId": request.ownerId,
         "createdAt": datetime.now(timezone.utc)
     }
-    result = collection.insert_one(record)
-    inserted_note = collection.find_one({'_id': result.inserted_id})
+    result = notes.insert_one(record)
+    inserted_note = notes.find_one({'_id': result.inserted_id})
 
     return NoteResponse(
         id=str(inserted_note['_id']),
@@ -53,7 +53,7 @@ async def insert_note(request: NoteRequest):
 
 @router.get("/notes", response_model=list[NoteResponse])
 async def get_notes_by_owner_id(owner_id: str):
-    result = collection.find({'ownerId': owner_id})
+    result = notes.find({'ownerId': owner_id})
     return [
         NoteResponse(
             id=str(note["_id"]),
@@ -69,7 +69,7 @@ async def get_notes_by_owner_id(owner_id: str):
 @router.delete("/notes/{note_id}", response_model=dict[str, str])
 async def delete_note_by_id(note_id: str):
     try:
-        result = collection.delete_one({'_id': ObjectId(note_id)})
+        result = notes.delete_one({'_id': ObjectId(note_id)})
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid note ID format!")
 
