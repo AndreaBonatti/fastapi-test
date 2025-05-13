@@ -10,3 +10,6 @@ Libraries list:
 - pymongo
 - pydantic
 - bcrypt
+- python-jose
+- python-multipart
+- passlib
