@@ -87,7 +87,7 @@ async def login(request: LoginRequest):
 
 
 @router.post("/auth/refresh")
-async def refresh_token(request: Request):
+async def refresh(request: Request):
     data = await request.json()
     token = data.get("refresh_token")
 
