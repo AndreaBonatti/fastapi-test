@@ -7,3 +7,6 @@ The differences will be the programming language and the libraries used to obtai
 Libraries list:
 - fastapi
 - uvicorn
+- pymongo
+- pydantic
+- bcrypt
