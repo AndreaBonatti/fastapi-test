@@ -1,6 +1,6 @@
 import os
 from datetime import datetime, timezone
-from typing import Optional, Any, Coroutine
+from typing import Optional
 
 from bson import ObjectId
 from fastapi import APIRouter, HTTPException
@@ -66,8 +66,8 @@ async def get_notes_by_owner_id(owner_id: str):
     ]
 
 
-@router.delete("/notes/{note_id}")
-async def delete_note_by_id(note_id: str) -> dict[str, str]:
+@router.delete("/notes/{note_id}", response_model=dict[str, str])
+async def delete_note_by_id(note_id: str):
     try:
         result = collection.delete_one({'_id': ObjectId(note_id)})
     except Exception:
