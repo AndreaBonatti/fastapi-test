@@ -29,8 +29,8 @@ class NoteResponse(BaseModel):
     createdAt: datetime
 
 
-@router.post("/notes")
-async def insert(request: NoteRequest) -> NoteResponse:
+@router.post("/notes", response_model=NoteResponse)
+async def insert(request: NoteRequest):
     record = {
         "title": request.title,
         "content": request.content,
@@ -48,3 +48,18 @@ async def insert(request: NoteRequest) -> NoteResponse:
         color=inserted_note['color'],
         createdAt=inserted_note['createdAt']
     )
+
+
+@router.get("/notes", response_model=list[NoteResponse])
+async def get_notes_by_owner_id(owner_id: str):
+    result = collection.find({'ownerId': owner_id})
+    return [
+        NoteResponse(
+            id=str(note["_id"]),
+            title=note["title"],
+            content=note["content"],
+            color=note["color"],
+            createdAt=note["createdAt"]
+        )
+        for note in result
+    ]
