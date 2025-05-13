@@ -1,8 +1,9 @@
 import os
 from datetime import datetime, timezone
-from typing import Optional
+from typing import Optional, Any, Coroutine
 
-from fastapi import APIRouter
+from bson import ObjectId
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from pymongo import MongoClient
 
@@ -30,7 +31,7 @@ class NoteResponse(BaseModel):
 
 
 @router.post("/notes", response_model=NoteResponse)
-async def insert(request: NoteRequest):
+async def insert_note(request: NoteRequest):
     record = {
         "title": request.title,
         "content": request.content,
@@ -63,3 +64,16 @@ async def get_notes_by_owner_id(owner_id: str):
         )
         for note in result
     ]
+
+
+@router.delete("/notes/{note_id}")
+async def delete_note_by_id(note_id: str) -> dict[str, str]:
+    try:
+        result = collection.delete_one({'_id': ObjectId(note_id)})
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid note ID format!")
+
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Note not found!")
+
+    return {"message": "Note deleted successfully!"}
